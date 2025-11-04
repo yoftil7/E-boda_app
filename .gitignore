@@ -1,0 +1,74 @@
+# === PYTHON / FASTAPI ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-wheel-metadata/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Logs
+*.log
+logs/
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# === REACT NATIVE / EXPO ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+metro-cache/
+dist/
+web-build/
+.expo/
+.expo-shared/
+android/
+ios/
+*.keystore
+*.jks
+*.p8
+*.pem
+*.mobileprovision
+
+# === REACT (Admin Dashboard) ===
+.parcel-cache/
+.next/
+.vercel/
+.cache/
+.DS_Store
+.idea/
+.vscode/
+coverage/
+
+# === SYSTEM / EDITOR ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.history/
+.envrc

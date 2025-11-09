@@ -1,3 +1,5 @@
+# pyright: reportAttributeAccessIssue=false
+
 """
 Ride Management Routes
 Handles ride requests, acceptance, status updates, and history
@@ -79,11 +81,11 @@ async def create_ride_request(
         ride = Ride(
             rider=current_user,
             pickup_address=data.pickup_address,
-            pickup_latitude=str(data.pickup_latitude),
-            pickup_longitude=str(data.pickup_longitude),
+            pickup_latitude=data.pickup_latitude,
+            pickup_longitude=data.pickup_longitude,
             dropoff_address=data.dropoff_address,
-            dropoff_latitude=str(data.dropoff_latitude),
-            dropoff_longitude=str(data.dropoff_longitude),
+            dropoff_latitude=data.dropoff_latitude,
+            dropoff_longitude=data.dropoff_longitude,
             distance_km=distance_km,
             estimated_fare=estimated_fare,
             rider_notes=data.rider_notes,
@@ -187,6 +189,34 @@ async def create_ride_request(
         )
 
 
+@router.get("/available")
+async def get_available_rides(current_user: User = Depends(get_current_user)):
+    """
+    Get all available (pending) rides for drivers
+    Only drivers can access this endpoint
+    """
+    if current_user.role != "driver":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only drivers can view available rides",
+        )
+
+    if not current_user.is_available:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You must be available to view ride requests",
+        )
+
+    # Get all pending rides
+    rides = Ride.objects(status="pending").order_by("-created_at")
+
+    return {
+        "success": True,
+        "count": len(rides),
+        "rides": [ride.to_dict() for ride in rides],
+    }
+
+
 @router.get("/nearby-drivers")
 async def get_nearby_drivers(
     latitude: float = Query(..., ge=-90, le=90),
@@ -256,34 +286,6 @@ async def get_nearby_drivers(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to search for nearby drivers: {str(e)}",
         )
-
-
-@router.get("/available")
-async def get_available_rides(current_user: User = Depends(get_current_user)):
-    """
-    Get all available (pending) rides for drivers
-    Only drivers can access this endpoint
-    """
-    if current_user.role != "driver":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only drivers can view available rides",
-        )
-
-    if not current_user.is_available:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You must be available to view ride requests",
-        )
-
-    # Get all pending rides
-    rides = Ride.objects(status="pending").order_by("-created_at")
-
-    return {
-        "success": True,
-        "count": len(rides),
-        "rides": [ride.to_dict() for ride in rides],
-    }
 
 
 @router.post("/{ride_id}/accept")
@@ -457,11 +459,27 @@ async def complete_ride(ride_id: str, current_user: User = Depends(get_current_u
 
         # Update driver stats and availability
         current_user.is_available = True
-        current_user.total_rides = str(int(current_user.total_rides) + 1)
+        try:
+            current_total = (
+                int(str(current_user.total_rides))
+                if current_user.total_rides is not None
+                else 0
+            )
+        except Exception:
+            current_total = 0
+        current_user.total_rides = str(current_total + 1)
         current_user.save()
 
         # Update rider stats
-        ride.rider.total_rides = str(int(ride.rider.total_rides) + 1)
+        try:
+            rider_total = (
+                int(str(ride.rider.total_rides))
+                if ride.rider.total_rides is not None
+                else 0
+            )
+        except Exception:
+            rider_total = 0
+        ride.rider.total_rides = str(rider_total + 1)
         ride.rider.save()
 
         # Calculate ride duration
@@ -543,15 +561,31 @@ async def update_ride_status(
 
         # Update timestamps based on status
         if data.status == "in_progress":
-            ride.started_at = datetime.utcnow()
-        elif data.status == "completed":
-            ride.completed_at = datetime.utcnow()
-            if data.final_fare:
-                ride.final_fare = data.final_fare
-            else:
-                ride.final_fare = ride.estimated_fare
-
             # Update driver stats
+            if ride.driver:
+                ride.driver.is_available = True
+                try:
+                    driver_total = (
+                        int(str(ride.driver.total_rides))
+                        if ride.driver.total_rides is not None
+                        else 0
+                    )
+                except Exception:
+                    driver_total = 0
+                ride.driver.total_rides = str(driver_total + 1)
+                ride.driver.save()
+
+            # Update rider stats
+            try:
+                rider_total = (
+                    int(str(ride.rider.total_rides))
+                    if ride.rider.total_rides is not None
+                    else 0
+                )
+            except Exception:
+                rider_total = 0
+            ride.rider.total_rides = str(rider_total + 1)
+            ride.rider.save()
             if ride.driver:
                 ride.driver.is_available = True
                 ride.driver.total_rides = str(int(ride.driver.total_rides) + 1)

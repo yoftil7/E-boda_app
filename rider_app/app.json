@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "E-Boda Rider",
+    "slug": "eboda-rider",
+    "version": "1.0.0",
+    "assetBundlePatterns": ["**/*"],
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermissions": "Allow E-Boda to access your location"
+        }
+      ]
+    ],
+    "android": {
+      "permissions": ["android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"]
+    },
+    "ios": {
+      "supportsTabletMode": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "E-Boda needs access your location to find nearby drivers",
+        "NSLocationAlwaysUsageDescription": "E-Boda needs access to your location to find nearby drivers"
+      }
+    }
+  }
+}

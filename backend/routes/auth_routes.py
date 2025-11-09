@@ -1,8 +1,10 @@
+# pyright: reportAttributeAccessIssue=false
+
+
 """
 Authentication Routes
 Handles user registration, login, and profile management
 """
-
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
@@ -10,10 +12,10 @@ from models.user_model import User
 from models.ride_model import Ride
 from models.location_model import LocationUpdate
 from utils.jwt_utils import create_access_token, get_current_user
-from sockets.ride_socket import manager, ride_rooms
 from datetime import datetime
-
 import logging
+
+from sockets.ride_socket import manager, ride_rooms
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -177,6 +179,7 @@ async def update_location(
     """
     Update driver's current location
     Only available for drivers
+    Broadcasts location update to all active ride WebSocket connections
     """
     if current_user.role != "driver":
         raise HTTPException(
@@ -184,16 +187,32 @@ async def update_location(
             detail="Only drivers can update location",
         )
 
-    current_user.location = {
-        "type": "Point",
-        "coordinates": [location.longitude, location.latitude],
-    }
+    longitude = location.longitude
+    latitude = location.latitude
+    current_user.location = {"type": "Point", "coordinates": [longitude, latitude]}
     current_user.save()
+
+    driver_id = str(current_user.id)
+    location_data = {
+        "event_type": "driver_location_update",
+        "driver_id": driver_id,
+        "latitude": latitude,
+        "longitude": longitude,
+        "location": {"type": "Point", "coordinates": [longitude, latitude]},
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+    # Broadcast to all ride rooms where this driver is active
+    for ride_id in ride_rooms:
+        ride = Ride.objects(id=ride_id).first()
+        if ride and ride.driver and str(ride.driver.id) == driver_id:
+            location_data["ride_id"] = ride_id
+            await manager.broadcast_to_ride(location_data, ride_id)
 
     return {
         "success": True,
         "message": "Location updated successfully",
-        "data": {"latitude": location.latitude, "longitude": location.longitude},
+        "data": {"latitude": latitude, "longitude": longitude},
     }
 
 

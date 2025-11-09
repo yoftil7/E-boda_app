@@ -54,6 +54,7 @@ ios/
 *.p8
 *.pem
 *.mobileprovision
+rider_app/.env
 
 # === REACT (Admin Dashboard) ===
 .parcel-cache/

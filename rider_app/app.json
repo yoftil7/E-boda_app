@@ -3,7 +3,7 @@
     "name": "E-Boda Rider",
     "slug": "eboda-rider",
     "version": "1.0.0",
-    "icon": "./assets/icon.png",
+    "icon": null,
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -28,10 +28,8 @@
         }
       },
       "package": "com.yoftil7.ebodarider",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#ffffff"
-      }
+      "icon": null,
+      "adaptiveIcon":null
     },
     "ios": {
       "supportsTabletMode": true,

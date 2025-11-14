@@ -28,10 +28,8 @@
         }
       },
       "package": "com.yoftil7.ebodarider",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
+      "icon": null,
+      "adaptiveIcon": null,
       "mdpi": false,
       "hdpi": false,
       "xhdpi": false,

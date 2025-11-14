@@ -27,7 +27,11 @@
           "apiKey": "AIzaSyByY5XA5GJo_favIJy0SfJuhI1UdPcVSNk"
         }
       },
-      "package": "com.yoftil7.ebodarider"
+      "package": "com.yoftil7.ebodarider",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "ios": {
       "supportsTabletMode": true,

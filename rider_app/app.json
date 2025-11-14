@@ -31,7 +31,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "mdpi": false,
+      "hdpi": false,
+      "xhdpi": false,
+      "xxhdpi": false,
+      "xxxhdpi": false
     },
     "ios": {
       "supportsTabletMode": true,

@@ -28,13 +28,10 @@
         }
       },
       "package": "com.yoftil7.ebodarider",
-      "icon": null,
-      "adaptiveIcon": null,
-      "mdpi": false,
-      "hdpi": false,
-      "xhdpi": false,
-      "xxhdpi": false,
-      "xxxhdpi": false
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "ios": {
       "supportsTabletMode": true,

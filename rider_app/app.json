@@ -29,7 +29,7 @@
       },
       "package": "com.yoftil7.ebodarider",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       }
     },

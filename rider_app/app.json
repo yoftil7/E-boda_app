@@ -3,7 +3,9 @@
     "name": "E-Boda Rider",
     "slug": "eboda-rider",
     "version": "1.0.0",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "plugins": [
       [
         "expo-location",
@@ -13,12 +15,16 @@
       ]
     ],
     "android": {
-      "permissions": ["android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"],
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyAMkHHOM7rJf0GV9uUb8qSs8msmhhXrn7I"
         }
-      }
+      },
+      "package": "com.anonymous.ebodarider"
     },
     "ios": {
       "supportsTabletMode": true,
@@ -28,7 +34,8 @@
       },
       "config": {
         "googleMapsApiKey": "AIzaSyAMkHHOM7rJf0GV9uUb8qSs8msmhhXrn7I"
-      }
+      },
+      "bundleIdentifier": "com.anonymous.ebodarider"
     }
   }
 }

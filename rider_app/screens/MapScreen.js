@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Modal } from "react-native"
 import * as Location from "expo-location"
 import { useUserStore } from "../store/useUserStore"
 import { rideAPI } from "../services/api"
 import WebSocketService from "../services/websocket"
 import MapViewComponent from "../components/MapViewComponent"
 import RideStatusCard from "../components/RideStatusCard"
+import DestinationSearch from "../components/DestinationSearch"
 
 export default function MapScreen({ navigation }) {
   const mapRef = useRef(null)
@@ -18,7 +19,8 @@ export default function MapScreen({ navigation }) {
   const [requesting, setRequesting] = useState(false)
   const [showRideRequest, setShowRideRequest] = useState(false)
   const [pickupLocation, setPickupLocation] = useState(null)
-  const [dropoffLocation, setDropoffLocation] = useState("")
+  const [dropoffLocation, setDropoffLocation] = useState(null)
+  const [routeCoordinates, setRouteCoordinates] = useState([])
   const [wsConnected, setWsConnected] = useState(false)
 
   useEffect(() => {
@@ -126,27 +128,36 @@ export default function MapScreen({ navigation }) {
   }
 
   const handleRequestRide = async () => {
-    if (!dropoffLocation.trim()) {
-      Alert.alert("Error", "Please enter a destination")
+    if (!dropoffLocation || !dropoffLocation.latitude || !dropoffLocation.longitude) {
+      Alert.alert("Error", "Please select a destination from the suggestions")
       return
     }
 
     setRequesting(true)
     try {
-      const response = await rideAPI.requestRide(
-        { latitude: pickupLocation.latitude, longitude: pickupLocation.longitude },
-        { address: dropoffLocation },
-      )
+      const rideRequest = {
+        pickup_address: "Current Location",
+        pickup_latitude: pickupLocation.latitude,
+        pickup_longitude: pickupLocation.longitude,
+        dropoff_address: dropoffLocation.address,
+        dropoff_latitude: dropoffLocation.latitude,
+        dropoff_longitude: dropoffLocation.longitude,
+        rider_notes: null,
+        auto_assign: true,
+      }
+
+      console.log("[v0] Sending ride request:", rideRequest)
+      const response = await rideAPI.requestRide(rideRequest)
 
       const ride = response.data.data
       setCurrentRide(ride)
       setShowRideRequest(false)
 
-      // Join ride room via WebSocket
       if (token) {
         WebSocketService.joinRide(ride.id)
       }
     } catch (error) {
+      console.error("[v0] Ride request error:", error.response?.data)
       Alert.alert("Error", error.response?.data?.detail || "Failed to request ride")
     } finally {
       setRequesting(false)
@@ -179,6 +190,7 @@ export default function MapScreen({ navigation }) {
         userLocation={location}
         nearbyDrivers={nearbyDrivers}
         currentRide={currentRide}
+        routeCoordinates={routeCoordinates}
       />
 
       {currentRide ? (
@@ -205,19 +217,21 @@ export default function MapScreen({ navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Where to?</Text>
 
-            <TextInput
-              style={styles.input}
+            <DestinationSearch
               placeholder="Enter destination"
-              placeholderTextColor="#999"
-              value={dropoffLocation}
-              onChangeText={setDropoffLocation}
-              editable={!requesting}
+              onPlaceSelected={(place) => {
+                console.log("[v0] Place selected:", place)
+                setDropoffLocation(place)
+              }}
             />
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.buttonSecondary}
-                onPress={() => setShowRideRequest(false)}
+                onPress={() => {
+                  setShowRideRequest(false)
+                  setDropoffLocation(null)
+                }}
                 disabled={requesting}
               >
                 <Text style={styles.buttonSecondaryText}>Cancel</Text>

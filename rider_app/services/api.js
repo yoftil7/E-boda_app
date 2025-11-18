@@ -1,7 +1,7 @@
 import axios from "axios"
 import * as SecureStore from "expo-secure-store"
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://10.0.2.2:8000"
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "http://10.0.2.2:8000"
 
 console.log("[v0] API Base URL:", API_BASE_URL)
 
@@ -25,7 +25,7 @@ export const authAPI = {
 }
 
 export const rideAPI = {
-  requestRide: (pickup, dropoff) => api.post("/rides/request", { pickup, dropoff }),
+  requestRide: (rideRequestBody) => api.post("/rides/request", rideRequestBody),
   getNearbyDrivers: (latitude, longitude, radius_km = 5) =>
     api.get(`/rides/nearby-drivers`, {
       params: { latitude, longitude, radius_km },

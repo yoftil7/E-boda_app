@@ -70,7 +70,9 @@
     "@react-native-mapbox-gl/maps": "8.6.0-beta.0",
     "@react-navigation/native-stack": "7.6.2",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@rnmapbox/maps": "10.2.7"
+    "@rnmapbox/maps": "10.2.7",
+    "react-native-get-random-values": "2.0.0",
+    "react-native-google-places-autocomplete": "2.5.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",

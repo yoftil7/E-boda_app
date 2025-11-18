@@ -11,7 +11,7 @@ class WebSocketService {
   }
 
   connect(userId, token, rideId = null) {
-    const WS_BASE_URL = process.env.WS_BASE_URL || "ws://10.0.2.2:8000/ws/ride"
+    const WS_BASE_URL = process.env.EXPO_PUBLIC_WS_BASE_URL || "ws://10.0.2.2:8000/ws/ride"
     const url = `${WS_BASE_URL}?token=${token}`
 
     this.userId = userId

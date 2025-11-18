@@ -1,64 +1,104 @@
-import { StyleSheet } from "react-native"
-import MapView, { Marker, Circle } from "react-native-maps"
+import { StyleSheet, View, Text } from "react-native"
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps"
 
-export default function MapViewComponent({ mapRef, userLocation, nearbyDrivers, currentRide }) {
-  if (!userLocation) return null
+export default function MapViewComponent({ mapRef, userLocation, nearbyDrivers, currentRide, routeCoordinates }) {
+  if (!userLocation) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Loading map...</Text>
+      </View>
+    )
+  }
 
   return (
-    <MapView
-      ref={mapRef}
-      style={styles.map}
-      initialRegion={{
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      }}
-      showsUserLocation={true}
-      showsMyLocationButton={true}
-    >
-      {/* User Location Circle */}
-      <Circle
-        center={userLocation}
-        radius={500}
-        strokeColor="#FF6B35"
-        fillColor="rgba(255, 107, 53, 0.1)"
-        strokeWidth={2}
-      />
-
-      {/* Nearby Drivers */}
-      {nearbyDrivers &&
-        nearbyDrivers.map((driver) => (
-          <Marker
-            key={driver.id}
-            coordinate={{
-              latitude: driver.location.coordinates[1],
-              longitude: driver.location.coordinates[0],
-            }}
-            title={driver.name}
-            description={`Rating: ${driver.rating}`}
-            pinColor="#4CAF50"
-          />
-        ))}
-
-      {/* Current Driver Marker */}
-      {currentRide && currentRide.driver_location && (
+    <View style={styles.container}>
+      <MapView
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
+        style={styles.map}
+        initialRegion={{
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+        showsUserLocation={true}
+        showsMyLocationButton={true}
+        onMapReady={() => console.log("[v0] Map loaded successfully")}
+      >
+        {/* User Location Marker */}
         <Marker
           coordinate={{
-            latitude: currentRide.driver_location.coordinates[1],
-            longitude: currentRide.driver_location.coordinates[0],
+            latitude: userLocation.latitude,
+            longitude: userLocation.longitude,
           }}
-          title="Your Driver"
-          description={currentRide.driver_name}
-          pinColor="#2196F3"
+          title="Your Location"
+          pinColor="#FF6B35"
         />
-      )}
-    </MapView>
+
+        {/* Nearby Drivers */}
+        {nearbyDrivers && nearbyDrivers.length > 0 && nearbyDrivers.map((driver) => {
+          const [longitude, latitude] = driver.location.coordinates
+          console.log("[v0] Rendering driver marker:", driver.full_name, [latitude, longitude])
+          return (
+            <Marker
+              key={driver.id}
+              coordinate={{
+                latitude: latitude,
+                longitude: longitude,
+              }}
+              title={driver.full_name}
+              description={`Rating: ${driver.rating} ⭐`}
+              pinColor="#4CAF50"
+            />
+          )
+        })}
+
+        {/* Current Driver Marker (during active ride) */}
+        {currentRide && currentRide.driver_location && (() => {
+          const [longitude, latitude] = currentRide.driver_location.coordinates
+          return (
+            <Marker
+              key="current-driver"
+              coordinate={{
+                latitude: latitude,
+                longitude: longitude,
+              }}
+              title="Your Driver"
+              description={currentRide.driver_name || "On the way"}
+              pinColor="#2196F3"
+            />
+          )
+        })()}
+
+        {/* Route polyline if coordinates are provided */}
+        {routeCoordinates && routeCoordinates.length > 0 && (
+          <Polyline
+            coordinates={routeCoordinates}
+            strokeColor="#2196F3"
+            strokeWidth={4}
+          />
+        )}
+      </MapView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  container: {
+    ...StyleSheet.absoluteFillObject,
+  },
   map: {
     ...StyleSheet.absoluteFillObject,
+  },
+  errorContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#1a1a1a",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#fff",
+    fontSize: 16,
   },
 })

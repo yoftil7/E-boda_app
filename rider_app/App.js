@@ -1,5 +1,6 @@
 "use client"
 
+import 'react-native-get-random-values';
 import React, { useEffect } from "react"
 import { NavigationContainer } from "@react-navigation/native"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
@@ -25,7 +26,6 @@ export default function App() {
       const token = await SecureStore.getItemAsync("userToken")
       if (token) {
         setToken(token)
-        // Validate token by fetching user data
         const userStr = await SecureStore.getItemAsync("userData")
         if (userStr) {
           setUser(JSON.parse(userStr))

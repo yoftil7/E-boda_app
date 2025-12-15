@@ -24,7 +24,7 @@
       
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyByY5XA5GJo_favIJy0SfJuhI1UdPcVSNk"
+          "apiKey": "${EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}"
         }
       },
       "package": "com.anonymous.ebodarider"

@@ -7,7 +7,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
-import logging_config
 import time
 from database import connect_db, disconnect_db
 from routes import auth_routes, ride_routes, admin_routes
@@ -75,16 +74,20 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Database connection events
 @app.on_event("startup")
 async def startup_event():
-    """Connect to MongoDB on startup"""
+    """Connect to MongoDB on startup and start WebSocket manager"""
     logger.info("Starting E-Boda API...")
     connect_db()
     logger.info("Database connected successfully")
+    await ride_socket.manager.start()
+    logger.info("WebSocket manager started")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Disconnect from MongoDB on shutdown"""
+    """Disconnect from MongoDB and stop WebSocket manager on shutdown"""
     logger.info("Shutting down E-Boda API...")
+    await ride_socket.manager.stop()
+    logger.info("WebSocket manager stopped")
     disconnect_db()
     logger.info("Database disconnected")
 

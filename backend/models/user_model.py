@@ -9,7 +9,6 @@ from mongoengine import (
     EmailField,
     BooleanField,
     DateTimeField,
-    ListField,
     PointField,
 )
 from datetime import datetime
@@ -27,12 +26,8 @@ class User(Document):
 
     meta = {
         "collection": "users",
-        "indexes": [
-            "email",
-            "phone",
-            "role",
-            "location",  # you have created this index using mongosh yofti - {"fields": ["location"], "type": "2dsphere"},
-        ],
+        "indexes": ["email", "phone", "role", {"fields": [("location", "2dsphere")]}],
+        "strict": False,
     }
 
     # Basic Information
@@ -54,8 +49,9 @@ class User(Document):
     vehicle_model = StringField(max_length=50)
     is_available = BooleanField(default=False)  # For drivers only
 
-    # Location (for drivers)
-    location = PointField(auto_index=False)
+    location = PointField(
+        auto_index=False
+    )  # GeoJSON Point: {"type": "Point", "coordinates": [longitude, latitude]}
 
     # Ratings
     rating = StringField(default="5.0")
@@ -86,11 +82,6 @@ class User(Document):
             "rating": self.rating,
             "total_rides": self.total_rides,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            # Driver-specific fields
-            "driver_license": self.driver_license if self.role == "driver" else None,
-            "vehicle_plate": self.vehicle_plate if self.role == "driver" else None,
-            "vehicle_model": self.vehicle_model if self.role == "driver" else None,
-            "is_available": self.is_available if self.role == "driver" else None,
         }
 
         # Driver-specific fields

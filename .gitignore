@@ -1,4 +1,4 @@
-# === PYTHON / FASTAPI ===
+# === PYTHON / BACKEND ===
 __pycache__/
 *.py[cod]
 *.pyo
@@ -17,6 +17,7 @@ lib64/
 parts/
 sdist/
 var/
+Eboda_notes.txt
 *.egg-info/
 .installed.cfg
 *.egg
@@ -29,13 +30,16 @@ htmlcov/
 
 # Logs
 *.log
-logs/
+**/logs/
 *.sqlite3
 
 # Environment
 .env
 .env.local
 .env.*.local
+
+# Dev-only scripts
+simulate_driver.py
 
 # === REACT NATIVE / EXPO ===
 node_modules/
@@ -56,20 +60,24 @@ ios/
 *.mobileprovision
 rider_app/.env
 
-# === REACT (Admin Dashboard) ===
+# === REACT / TOOLING ===
 .parcel-cache/
 .next/
 .vercel/
 .cache/
-.DS_Store
-.idea/
-.vscode/
 coverage/
 
 # === SYSTEM / EDITOR ===
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
 *.swp
 *.swo
 .history/
 .envrc
+
+# Temporary files
+*.tmp
+*.bak
+*.old

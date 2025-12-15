@@ -1,16 +1,13 @@
-# pyright: reportAttributeAccessIssue=false
-
-
 """
 Authentication Routes
 Handles user registration, login, and profile management
 """
+
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from models.user_model import User
 from models.ride_model import Ride
-from models.location_model import LocationUpdate
 from utils.jwt_utils import create_access_token, get_current_user
 from datetime import datetime
 import logging
@@ -174,7 +171,7 @@ async def get_current_user_profile(current_user: User = Depends(get_current_user
 
 @router.put("/me/location")
 async def update_location(
-    location: LocationUpdate, current_user: User = Depends(get_current_user)
+    latitude: float, longitude: float, current_user: User = Depends(get_current_user)
 ):
     """
     Update driver's current location
@@ -187,8 +184,6 @@ async def update_location(
             detail="Only drivers can update location",
         )
 
-    longitude = location.longitude
-    latitude = location.latitude
     current_user.location = {"type": "Point", "coordinates": [longitude, latitude]}
     current_user.save()
 
@@ -207,7 +202,7 @@ async def update_location(
         ride = Ride.objects(id=ride_id).first()
         if ride and ride.driver and str(ride.driver.id) == driver_id:
             location_data["ride_id"] = ride_id
-            await manager.broadcast_to_ride(location_data, ride_id)
+            await manager.broadcast_to_room(ride_id, location_data)
 
     return {
         "success": True,
@@ -218,11 +213,15 @@ async def update_location(
 
 @router.put("/me/availability")
 async def toggle_availability(
-    is_available: bool, current_user: User = Depends(get_current_user)
+    is_available: bool,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
+    current_user: User = Depends(get_current_user),
 ):
     """
     Toggle driver availability status
     Only available for drivers
+    Optionally set location when becoming available
     """
     if current_user.role != "driver":
         raise HTTPException(
@@ -230,11 +229,44 @@ async def toggle_availability(
             detail="Only drivers can update availability",
         )
 
+    if is_available and latitude is not None and longitude is not None:
+        current_user.location = {"type": "Point", "coordinates": [longitude, latitude]}
+        logger.info(
+            f"Updated location for driver {current_user.id}: [{latitude}, {longitude}]"
+        )
+    elif is_available and not current_user.location:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Location is required when becoming available. Please provide latitude and longitude.",
+        )
+
     current_user.is_available = is_available
     current_user.save()
 
-    return {
+    if is_available:
+        available_count = User.objects(
+            role="driver", is_available=True, is_active=True
+        ).count()
+        await manager.broadcast_to_all(
+            {
+                "event_type": "driver_availability_changed",
+                "driver_id": str(current_user.id),
+                "is_available": is_available,
+                "available_drivers_count": available_count,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
+
+    response_data = {
         "success": True,
         "message": f"Availability set to {'available' if is_available else 'unavailable'}",
         "is_available": is_available,
     }
+
+    if current_user.location:
+        response_data["location"] = {
+            "latitude": current_user.location["coordinates"][1],
+            "longitude": current_user.location["coordinates"][0],
+        }
+
+    return response_data

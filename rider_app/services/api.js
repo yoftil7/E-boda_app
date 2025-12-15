@@ -25,15 +25,25 @@ export const authAPI = {
 }
 
 export const rideAPI = {
-  requestRide: (rideRequestBody) => api.post("/rides/request", rideRequestBody),
-  getNearbyDrivers: (latitude, longitude, radius_km = 5) =>
-    api.get(`/rides/nearby-drivers`, {
-      params: { latitude, longitude, radius_km },
-    }),
+  requestRide: (rideRequestBody) => api.post("/rides/", rideRequestBody),
+  getNearbyDrivers: (latitude, longitude, radius_km = 5) => {
+    const lat = Number.parseFloat(latitude)
+    const lon = Number.parseFloat(longitude)
+
+    console.log(`[v0] API call: /rides/nearby-drivers?latitude=${lat}&longitude=${lon}&radius_km=${radius_km}`)
+
+    return api.get(`/rides/nearby-drivers`, {
+      params: { latitude: lat, longitude: lon, radius_km },
+    })
+  },
+  getRide: (rideId) => api.get(`/rides/${rideId}`),
   getRideStatus: (rideId) => api.get(`/rides/${rideId}`),
-  cancelRide: (rideId) => api.post(`/rides/${rideId}/cancel`),
+  cancelRide: (rideId, reason = "", reasonDetail = "") =>
+    api.post(`/rides/${rideId}/cancel`, { reason, reason_detail: reasonDetail }),
+  retryAssign: (rideId) => api.post(`/rides/${rideId}/retry-assign`),
   completeRide: (rideId) => api.post(`/rides/${rideId}/complete`),
-  rateRide: (rideId, rating, feedback) => api.post(`/rides/${rideId}/rate`, { rating, feedback }),
+  rateRide: (rideId, rating, feedback = "") =>
+    api.post(`/rides/${rideId}/rating`, { rating: Number(rating), feedback }),
 }
 
 export const userAPI = {

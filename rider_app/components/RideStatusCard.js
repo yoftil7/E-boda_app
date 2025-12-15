@@ -4,7 +4,11 @@ export default function RideStatusCard({ ride, onCancel }) {
   const getStatusDisplay = () => {
     switch (ride.status) {
       case "pending":
+      case "requested":
+      case "finding_driver":
         return { text: "Finding Driver...", color: "#FF9800" }
+      case "assigned":
+      case "driver_arriving":
       case "accepted":
         return { text: "Driver Arriving", color: "#2196F3" }
       case "in_progress":
@@ -18,6 +22,14 @@ export default function RideStatusCard({ ride, onCancel }) {
 
   const status = getStatusDisplay()
 
+  const showCancelButton =
+    ride.status === "pending" ||
+    ride.status === "requested" ||
+    ride.status === "finding_driver" ||
+    ride.status === "assigned" ||
+    ride.status === "driver_arriving" ||
+    ride.status === "accepted"
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -29,17 +41,19 @@ export default function RideStatusCard({ ride, onCancel }) {
 
       <View style={styles.divider} />
 
-      {ride.status !== "pending" && (
+      {ride.driver_name && (
         <>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Driver</Text>
             <Text style={styles.value}>{ride.driver_name}</Text>
           </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Vehicle</Text>
-            <Text style={styles.value}>{ride.vehicle_number}</Text>
-          </View>
+          {ride.vehicle_number && (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Vehicle</Text>
+              <Text style={styles.value}>{ride.vehicle_number}</Text>
+            </View>
+          )}
 
           <View style={styles.divider} />
         </>
@@ -50,7 +64,7 @@ export default function RideStatusCard({ ride, onCancel }) {
         <Text style={styles.fare}>ETB {(ride.fare || 0).toFixed(2)}</Text>
       </View>
 
-      {ride.status === "pending" && (
+      {showCancelButton && (
         <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
           <Text style={styles.cancelText}>Cancel Ride</Text>
         </TouchableOpacity>

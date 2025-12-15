@@ -37,76 +37,90 @@ async def get_distance_and_eta(
     try:
         url = "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix"
 
-        # Format request body for Routes API
         payload = {
             "origins": [
                 {
-                    "location": {
-                        "latLng": {"latitude": origin[0], "longitude": origin[1]}
+                    "waypoint": {
+                        "location": {
+                            "latLng": {"latitude": origin[0], "longitude": origin[1]}
+                        }
                     }
                 }
             ],
             "destinations": [
                 {
-                    "location": {
-                        "latLng": {
-                            "latitude": destination[0],
-                            "longitude": destination[1],
+                    "waypoint": {
+                        "location": {
+                            "latLng": {
+                                "latitude": destination[0],
+                                "longitude": destination[1],
+                            }
                         }
                     }
                 }
             ],
             "travelMode": "DRIVE",
-            "routingPreference": "TRAFFIC_AWARE",
         }
 
         headers = {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
+            "X-Goog-FieldMask": "originIndex,destinationIndex,duration,distanceMeters,status",
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url, json=payload, headers=headers, timeout=10.0
             )
-            response.raise_for_status()
+
+            if response.status_code != 200:
+                logger.warning(
+                    f"Routes API returned {response.status_code}: {response.text}, using fallback"
+                )
+                return _fallback_distance_calculation(origin, destination)
+
             data = response.json()
 
-        if "rows" not in data or not data["rows"]:
-            logger.error("Routes API returned no results")
+        if not data or "rows" not in data or not data["rows"]:
+            logger.warning("Routes API returned empty response, using fallback")
             return _fallback_distance_calculation(origin, destination)
 
+        # Extract first result from rows array
         row = data["rows"][0]
-
         if "elements" not in row or not row["elements"]:
-            logger.error("No elements in Routes API response")
+            logger.warning("No elements in Routes API response, using fallback")
             return _fallback_distance_calculation(origin, destination)
 
         element = row["elements"][0]
 
-        # Check for errors in the element
-        if "status" in element and element["status"] != "OK":
-            logger.error(
-                f"Route calculation failed: {element.get('status', 'Unknown error')}"
+        # Check status
+        if element.get("status") != "OK":
+            logger.warning(
+                f"Route calculation status: {element.get('status')}, using fallback"
             )
             return _fallback_distance_calculation(origin, destination)
 
-        # Extract distance and duration from new API format
+        # Extract distance and duration
         distance_meters = element.get("distanceMeters", 0)
-        duration_seconds = int(element.get("duration", "0s").replace("s", ""))
+        duration_str = element.get("duration", "0s")
+
+        # Parse duration string (format: "123s")
+        duration_seconds = (
+            int(duration_str.replace("s", "")) if isinstance(duration_str, str) else 0
+        )
 
         distance_km = round(distance_meters / 1000, 2)
         duration_minutes = round(duration_seconds / 60)
 
         return {
             "distance_km": distance_km,
-            "duration_minutes": duration_minutes,
+            "duration_minutes": max(duration_minutes, 5),  # Minimum 5 minutes
             "duration_text": f"{duration_minutes} mins",
             "distance_text": f"{distance_km:.1f} km",
         }
 
     except Exception as e:
-        logger.error(f"Error calling Google Routes API: {str(e)}")
+        logger.warning(f"Google Routes API error: {str(e)}, using fallback calculation")
         return _fallback_distance_calculation(origin, destination)
 
 
@@ -130,7 +144,6 @@ async def get_route_polyline(
     try:
         url = "https://routes.googleapis.com/directions/v2:computeRoutes"
 
-        # Format request body for Routes API
         payload = {
             "origin": {
                 "location": {"latLng": {"latitude": origin[0], "longitude": origin[1]}}
@@ -141,37 +154,43 @@ async def get_route_polyline(
                 }
             },
             "travelMode": "DRIVE",
-            "routingPreference": "TRAFFIC_AWARE",
         }
 
         headers = {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
+            "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url, json=payload, headers=headers, timeout=10.0
             )
-            response.raise_for_status()
+
+            if response.status_code != 200:
+                logger.warning(
+                    f"Routes API returned {response.status_code}: {response.text}"
+                )
+                return None
+
             data = response.json()
 
         if "routes" not in data or not data["routes"]:
-            logger.error("Routes API returned no routes")
+            logger.warning("Routes API returned no routes")
             return None
 
         route = data["routes"][0]
 
-        # Extract polyline from new API format (it's in a different structure)
+        # Extract polyline
         if "polyline" in route and "encodedPolyline" in route["polyline"]:
             polyline = route["polyline"]["encodedPolyline"]
             return polyline
 
-        logger.error("No polyline found in Routes API response")
+        logger.warning("No polyline found in Routes API response")
         return None
 
     except Exception as e:
-        logger.error(f"Error getting route polyline from Routes API: {str(e)}")
+        logger.warning(f"Error getting route polyline: {str(e)}")
         return None
 
 

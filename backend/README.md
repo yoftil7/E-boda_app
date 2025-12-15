@@ -1,220 +1,204 @@
 # E-Boda Backend API
 
-**FastAPI backend for the E-Boda ride-hailing platform** — connecting passengers with electric boda (motorcycle) drivers in Kampala, Uganda.
+**E-Boda** is a ride-hailing backend platform built with **FastAPI**, designed to support real-time motorcycle taxi services using REST APIs and WebSockets.
+
+This backend handles authentication, ride lifecycle management, real-time driver/rider communication, admin controls, and scalable infrastructure for future growth.
 
 ---
 
-## 🚀 Features
+## Tech Stack
 
-- **JWT Authentication** with role-based access (rider, driver, admin)
-- **Ride Lifecycle Management** — from request to completion
-- **Google Maps Integration** (Distance Matrix + Directions APIs)
-- **Real-time WebSocket Updates** for driver location and ride status
-- **Nearby Driver Search** via MongoDB geospatial queries
-- **Scalable, Modular Architecture** built for production
-- **Admin Dashboard Endpoints** for full platform control
-
----
-
-## 🛠️ Tech Stack
-
-| Component | Technology                                  |
-| --------- | ------------------------------------------- |
-| Framework | **FastAPI (Python 3.9+)**                   |
-| Database  | **MongoDB + MongoEngine ODM**               |
-| Auth      | **JWT (JSON Web Tokens)**                   |
-| Real-Time | **WebSockets**                              |
-| Mapping   | **Google Maps API (Distance + Directions)** |
-| Docs      | **Swagger / ReDoc (auto-generated)**        |
+- **Framework:** FastAPI (Python)
+- **Database:** MongoDB
+- **ORM / ODM:** Motor / PyMongo
+- **Real-time Communication:** WebSockets
+- **Authentication:** JWT (Access & Refresh Tokens)
+- **Server:** Uvicorn
+- **Docs:** OpenAPI (Swagger & ReDoc)
+- **Architecture:** Modular, scalable, production-ready
 
 ---
 
 ## 📁 Project Structure
 
-backend/
-├── main.py # FastAPI entry point
-├── database.py # MongoDB connection
-├── logging_config.py # Logging setup (file + console)
-├── logs/ # App log storage
-├── models/
-│ ├── user_model.py
-│ └── ride_model.py
+```
+e-boda-backend/
+│
+├── main.py                # Application entry point
+├── database.py            # MongoDB connection logic
+│
 ├── routes/
-│ ├── auth_routes.py
-│ ├── ride_routes.py
-│ └── admin_routes.py
+│   ├── auth_routes.py     # Authentication endpoints
+│   ├── ride_routes.py     # Ride lifecycle endpoints
+│   └── admin_routes.py    # Admin management endpoints
+│
 ├── sockets/
-│ ├── ride_socket.py
-│ └── ws_auth.py
-├── utils/
-│ ├── jwt_utils.py
-│ └── helpers.py
+│   ├── ride_socket.py     # WebSocket ride events
+│   └── manager.py         # WebSocket connection manager
+│
+├── models/                # Database models
+├── schemas/               # Pydantic schemas
+├── services/              # Business logic
+├── utils/                 # Helpers & utilities
+│
 ├── requirements.txt
-├── .env.example
 └── README.md
+```
 
 ---
 
-## ⚙️ Installation & Setup
+## Features
 
-### Prerequisites
+### Authentication
 
-- Python 3.9+
-- MongoDB (local or Atlas)
-- Google Cloud Project (for Maps API)
-- pip package manager
+- User & driver registration
+- Login with JWT tokens
+- Role-based access control (Rider, Driver, Admin)
+- Secure token validation
 
-### Steps
+### Ride Management
 
-```bash
-# 1. Clone repo
-git clone https://github.com/<your-username>/e-boda-backend.git
-cd e-boda-backend/backend
+- Create ride requests
+- Assign drivers
+- Accept / reject rides
+- Start & complete rides
+- Cancel rides
+- Track ride status changes
 
-# 2. Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate   # macOS/Linux
-# venv\Scripts\activate    # Windows
+### Real-Time Communication (WebSockets)
 
-# 3. Install dependencies
-pip install -r requirements.txt
+- Live ride status updates
+- Driver ↔ Rider real-time events
+- WebSocket connection manager
+- Scalable event broadcasting
 
-# 4. Setup environment variables
-cp .env.example .env
+### Admin Capabilities
 
-# 5. Run the app
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+- View platform statistics
+- Manage users & drivers
+- Monitor active rides
+- System-level controls
+
+### Maps & Directions
+
+- Architecture prepared for **Google Maps Directions API**
+- Distance & route calculation support
+- Location-based ride logic ready for integration
+
+_(Note: Maps APIs are structured but usage depends on frontend integration and billing configuration.)_
+
+---
+
+## Application Lifecycle
+
+### Startup
+
+- MongoDB connection initialized
+- WebSocket manager started
+- Middleware and routes registered
+
+### Shutdown
+
+- WebSocket connections gracefully closed
+- Database disconnected safely
+
+---
+
+## API Documentation
+
+Once running, access:
+
+- **Swagger UI:**
+  `http://localhost:8000/docs`
+
+- **ReDoc:**
+  `http://localhost:8000/redoc`
+
+---
+
+## Health Checks
+
+- **Root:** `/`
+- **Health:** `/health`
+
+Example response:
+
+```json
+{
+  "success": true,
+  "status": "healthy",
+  "database": "connected"
+}
 ```
 
-### API Overview
+---
 
-## Authentication (/auth)
+## ▶️ Running the Project
 
-Method Endpoint Description
-POST /auth/register Register new user
-POST /auth/login Login and get token
-GET /auth/me Get current user profile
-PUT /auth/me/location Update driver location
-PUT /auth/me/availability Toggle driver availability
+### Install Dependencies
 
-## Rides (/rides)
+```bash
+pip install -r requirements.txt
+```
 
-Method Endpoint Description
-POST /rides/request Request a ride
-GET /rides/available Drivers: get available rides
-GET /rides/nearby-drivers Riders: find nearby drivers
-POST /rides/{ride_id}/accept Accept a ride
-POST /rides/{ride_id}/start Start a ride
-POST /rides/{ride_id}/complete Complete a ride
-GET /rides/user/{user_id} Ride history
-GET /rides/{ride_id} Ride details
+### Run the Server
 
-## Admin (/admin)
+```bash
+uvicorn main:app --reload
+```
 
-Method Endpoint Description
-GET /admin/users Get all users
-GET /admin/drivers Get all drivers
-GET /admin/rides Get all rides
-GET /admin/stats Platform stats
-PUT /admin/users/{user_id}/status Update user status
-DELETE /admin/rides/{ride_id} Delete ride
+Server runs at:
 
-### WebSocket API (/ws/ride)
+```
+http://localhost:8000
+```
 
-# Connect:
+---
 
-ws://localhost:8000/ws/ride?token=<JWT_TOKEN>
+## Environment Variables (Example)
 
-# Events
+```
+MONGO_URI=mongodb://localhost:27017/e_boda
+JWT_SECRET=your_secret_key
+JWT_ALGORITHM=HS256
+TOKEN_EXPIRE_MINUTES=60
+```
 
-# Client → Server
+---
 
-{ "event_type": "join_ride", "ride_id": "ride_id_here" }
+## Scalability & Future Enhancements
 
-{ "event_type": "location_update", "ride_id": "ride_id_here", "latitude": 0.3476, "longitude": 32.5825 }
+- Payment gateway integration
+- Push notifications
+- Ride history & analytics
+- Driver earnings system
+- Multi-city support
+- Rate limiting & monitoring
+- Docker & CI/CD pipelines
 
-# Server → Client
+---
 
-{ "event_type": "ride_accepted", "ride_id": "..." }
+## Design Philosophy
 
-{ "event_type": "driver_location_update", "ride_id": "...", "latitude": 0.3476, "longitude": 32.5825 }
+- Clean separation of concerns
+- Real-time first architecture
+- Production-minded logging & error handling
+- Easily extensible modules
+- Mobile-first backend design
 
-{ "event_type": "ride_completed", "ride_id": "...", "final_fare": 5500 }
+---
 
-### Security
+## Author
 
-- All REST and WS routes require valid JWT.
+**Yoftahie Alem**
+Backend Engineer | FastAPI | Real-time Systems
+Built with precision, patience, and caffeine ☕
 
-- Role-based access control for rider/driver/admin.
+---
 
-- Unauthorized access returns 401 or 403.
+## 🏁 Status
 
-- WebSocket tokens verified on connection.
+🚧 **Active Development**
+Core backend architecture is stable and ready for frontend/mobile integration.
 
-### Google Maps Integration
-
-- Distance Matrix API → distance & ETA
-
-- Directions API → route polyline
-
-- Fallback → Haversine formula if API fails
-
-- 2dsphere index for nearby driver search:
-
-- db.users.createIndex({ location: "2dsphere" })
-
-### Logging & Error Handling
-
-- Logs stored in logs/eboda.log
-
-- Rotating file handler + console output
-
-- Consistent error handling across modules
-
-- Example:
-  - logger.error(f"Error handling ride update: {str(e)}", exc_info=True)
-
-### Performance
-
-- Nearby drivers limited to 10 results
-
-- WS auto-cleanup on disconnect
-
-- Async I/O for API calls
-
-- MongoDB optimized with indexes
-
-### Testing
-
-- Quick Test Commands
-
-# Health check
-
-curl http://localhost:8000/health
-
-# Login
-
-curl -X POST http://localhost:8000/auth/login -d '{"email":"test@test.com","password":"123"}' -H "Content-Type: application/json"
-
-### WebSocket Test (wscat)
-
-- wscat -c "ws://localhost:8000/ws/ride?token=YOUR_JWT_TOKEN"
-  > {"event_type": "join_ride", "ride_id": "ride_id_here"}
-  > {"event_type": "location_update", "ride_id": "ride_id_here", "latitude": 0.3476, "longitude": 32.5825}
-
-### Deployment (Render / Railway)
-
-- Start Command:
-  . uvicorn main:app --host 0.0.0.0 --port $PORT
-
-- Environment Variables:
-  . MONGO_URI
-  . JWT_SECRET_KEY
-  . GOOGLE_MAPS_API_KEY
-  . FRONTEND_URL
-
-### License
-
-MIT License
-
-Built with ❤️ by Yofti for E-Boda — empowering clean mobility in Africa 🌍
+---

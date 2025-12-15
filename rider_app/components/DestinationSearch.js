@@ -1,8 +1,9 @@
-import React from 'react';
-import { StyleSheet } from 'react-native';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { StyleSheet } from "react-native"
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete"
 
 export default function DestinationSearch({ onPlaceSelected, placeholder = "Where to?" }) {
+  const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+
   return (
     <GooglePlacesAutocomplete
       placeholder={placeholder}
@@ -14,12 +15,13 @@ export default function DestinationSearch({ onPlaceSelected, placeholder = "Wher
             address: data.description,
             latitude: details.geometry.location.lat,
             longitude: details.geometry.location.lng,
-          });
+          })
         }
       }}
       query={{
-        key: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
-        language: 'en',
+        key: API_KEY,
+        language: "en",
+        components: "country:ug",
       }}
       styles={{
         container: styles.container,
@@ -28,11 +30,21 @@ export default function DestinationSearch({ onPlaceSelected, placeholder = "Wher
         listView: styles.listView,
         row: styles.row,
         description: styles.description,
+        separator: styles.separator,
       }}
       enablePoweredByContainer={false}
       debounce={300}
+      minLength={2}
+      textInputProps={{
+        placeholderTextColor: "#999",
+        autoFocus: true,
+        returnKeyType: "search",
+      }}
+      nearbyPlacesAPI="GooglePlacesSearch"
+      filterReverseGeocodingByTypes={["locality", "administrative_area_level_3"]}
+      listViewDisplayed="auto"
     />
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -40,31 +52,44 @@ const styles = StyleSheet.create({
     flex: 0,
   },
   textInputContainer: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#333',
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    paddingHorizontal: 0,
   },
   textInput: {
-    backgroundColor: '#2a2a2a',
-    color: '#fff',
+    backgroundColor: "transparent",
+    color: "#000",
     fontSize: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
+    height: 52,
+    fontWeight: "500",
   },
   listView: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
+    backgroundColor: "#fff",
+    borderRadius: 12,
     marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    maxHeight: 240,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   row: {
-    backgroundColor: '#2a2a2a',
-    padding: 13,
-    minHeight: 44,
-    flexDirection: 'row',
+    backgroundColor: "#fff",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   description: {
-    color: '#fff',
-    fontSize: 14,
+    color: "#000",
+    fontSize: 15,
+    fontWeight: "500",
   },
-});
+  separator: {
+    height: 1,
+    backgroundColor: "#f0f0f0",
+  },
+})

@@ -21,11 +21,11 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "googleMapsApiKey": "AIzaSyByY5XA5GJo_favIJy0SfJuhI1UdPcVSNk",
+      "googleMapsApiKey": "${EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}",
       "useNextNotationForCompatibility": true,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyByY5XA5GJo_favIJy0SfJuhI1UdPcVSNk"
+          "apiKey": "${EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}"
         }
       },
       "package": "com.yoftil7.ebodarider"

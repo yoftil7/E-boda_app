@@ -174,7 +174,7 @@ export default function MapScreen({ navigation }) {
 
       try {
         const response = await rideAPI.getRide(rideId)
-        const serverRide = response.data
+        const serverRide = response.data?.ride || response.data
 
         if (!serverRide || serverRide.status === undefined) {
           console.log("[MapScreen] Server returned undefined ride - retrying...")
@@ -183,7 +183,6 @@ export default function MapScreen({ navigation }) {
             const wsHealth = WebSocketService.getConnectionHealth()
             if (!wsHealth.isConnected) {
               console.log("[MapScreen] WS not connected during startup validation - waiting for connection...")
-              // Wait for WS to connect, then retry
               await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * 2))
             }
           }
@@ -191,6 +190,22 @@ export default function MapScreen({ navigation }) {
           if (retryCount < MAX_RETRIES) {
             await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS))
             return validateAndSyncRide(rideId, reason, retryCount + 1)
+          }
+
+          // The ride exists, we just couldn't parse it - keep local state
+          if (reason === "foreground_resume") {
+            console.log("[MapScreen] Foreground resume: keeping local ride state despite parse issue")
+            const localRide = useUserStore.getState().currentRide
+            if (localRide) {
+              try {
+                await WebSocketService.joinRide(localRide.id)
+                hasJoinedRideRef.current = true
+              } catch (e) {
+                console.log("[MapScreen] Failed to join ride room:", e)
+              }
+            }
+            isValidatingRef.current = false
+            return localRide
           }
 
           if (reason === "startup") {
@@ -222,7 +237,14 @@ export default function MapScreen({ navigation }) {
           console.log(`[MapScreen] Ride ${rideId} is terminal (${serverRide.status}) - clearing state`)
 
           if (serverRide.status === "completed") {
-            navigation.navigate("RideSummary", { ride: serverRide })
+            let durationMinutes = serverRide.duration_minutes || 0
+            if (!durationMinutes && serverRide.started_at && serverRide.completed_at) {
+              const started = new Date(serverRide.started_at)
+              const completed = new Date(serverRide.completed_at)
+              durationMinutes = Math.round((completed - started) / 60000)
+            }
+            const rideWithDuration = { ...serverRide, duration_minutes: durationMinutes }
+            navigation.navigate("RideSummary", { ride: rideWithDuration })
           } else {
             showToast(`Ride was ${serverRide.status}`, "info")
           }
@@ -234,7 +256,20 @@ export default function MapScreen({ navigation }) {
 
         if (ACTIVE_STATUSES.includes(serverRide.status)) {
           console.log(`[MapScreen] Ride ${rideId} is active (${serverRide.status}) - hydrating state`)
-          setCurrentRide(serverRide)
+
+          const hydratedRide = {
+            ...serverRide,
+            // Map nested driver fields to flat structure
+            driver_name: serverRide.driver?.name || serverRide.driver_name,
+            vehicle_number:
+              serverRide.driver?.vehicle_plate || serverRide.driver?.vehicle_model || serverRide.vehicle_number,
+            driver_phone: serverRide.driver?.phone || serverRide.driver_phone,
+            driver_id: serverRide.driver?.id || serverRide.driver_id,
+            // Ensure fare is available at top level
+            fare: serverRide.estimated_fare || serverRide.fare || serverRide.final_fare || 0,
+          }
+
+          setCurrentRide(hydratedRide)
 
           await rehydratePolylineIfNeeded(serverRide, reason)
 
@@ -274,20 +309,23 @@ export default function MapScreen({ navigation }) {
           return validateAndSyncRide(rideId, reason, retryCount + 1)
         }
 
-        if (reason === "startup") {
-          console.log("[MapScreen] Startup validation network error - keeping local ride for now")
-          const persistedRide = await loadPersistedRide()
-          if (persistedRide) {
-            setCurrentRide(persistedRide)
-            await rehydratePolylineIfNeeded(persistedRide, reason)
+        if (reason === "foreground_resume" || reason === "startup") {
+          console.log(`[MapScreen] ${reason} validation network error - keeping local ride for now`)
+          const localRide = useUserStore.getState().currentRide || (await loadPersistedRide())
+          if (localRide) {
+            if (reason === "startup") {
+              setCurrentRide(localRide)
+              await rehydratePolylineIfNeeded(localRide, reason)
+            }
             try {
-              await WebSocketService.joinRide(persistedRide.id)
+              await WebSocketService.joinRide(localRide.id)
+              hasJoinedRideRef.current = true
             } catch (e) {
               console.log("[MapScreen] Failed to join ride room:", e)
             }
           }
           isValidatingRef.current = false
-          return persistedRide
+          return localRide
         }
 
         isValidatingRef.current = false
@@ -1007,7 +1045,7 @@ export default function MapScreen({ navigation }) {
       )}
 
       <MapViewComponent
-        mapRef={mapRef}
+        ref={mapRef}
         userLocation={location}
         nearbyDrivers={nearbyDrivers}
         currentRide={currentRide}

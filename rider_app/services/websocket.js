@@ -1,6 +1,6 @@
 // idempotent joins, health tracking, and state recovery support
 
-import { AppState } from "react-native"
+import { AppState, Platform } from "react-native"
 
 class WebSocketService {
   constructor() {
@@ -191,14 +191,23 @@ class WebSocketService {
     this.onConnectRoomJoinCallback = callback
   }
 
-  connect(userId, token, rideId = null) {
+  async connect(userId, token, rideId = null) {
+    console.log(`[WebSocket] Connect requested (userId: ${userId}, rideId: ${rideId})`)
+
     // Clear any pending reconnect
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
 
-    const WS_BASE_URL = process.env.EXPO_PUBLIC_WS_BASE_URL || "ws://localhost:8000/ws/ride"
+    const getDefaultWsUrl = () => {
+      if (Platform.OS === "android") {
+        return "ws://10.0.2.2:8000/ws/ride"
+      }
+      return "ws://localhost:8000/ws/ride"
+    }
+
+    const WS_BASE_URL = process.env.EXPO_PUBLIC_WS_BASE_URL || getDefaultWsUrl()
     const url = `${WS_BASE_URL}?token=${token}`
 
     this.userId = userId

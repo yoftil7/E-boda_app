@@ -410,6 +410,18 @@ class ConnectionManager:
             return False
 
         try:
+            ws_state = connection.websocket.client_state
+            if ws_state.name != "CONNECTED":
+                logger.debug(
+                    f"WebSocket not in CONNECTED state for {user_id}: {ws_state.name}"
+                )
+                connection.is_alive = False
+                return False
+        except Exception:
+            # If we can't check state, proceed cautiously
+            pass
+
+        try:
             async with connection.write_lock:
                 await asyncio.wait_for(
                     connection.websocket.send_json(message), timeout=timeout
@@ -422,6 +434,14 @@ class ConnectionManager:
 
         except asyncio.TimeoutError:
             logger.warning(f"Send timeout for user {user_id}, marking as stale")
+            connection.is_alive = False
+            return False
+
+        except RuntimeError as e:
+            if "not connected" in str(e).lower() or "accept" in str(e).lower():
+                logger.debug(f"WebSocket not connected for {user_id}, marking as dead")
+            else:
+                logger.error(f"RuntimeError sending to {user_id}: {str(e)}")
             connection.is_alive = False
             return False
 
@@ -463,10 +483,26 @@ class ConnectionManager:
 
         for user_id, connection in connections_snapshot:
             try:
+                try:
+                    ws_state = connection.websocket.client_state
+                    if ws_state.name != "CONNECTED":
+                        disconnected.append(user_id)
+                        continue
+                except Exception:
+                    pass
+
                 async with asyncio.timeout(5.0):
                     async with connection.write_lock:
                         await connection.websocket.send_json(message)
                     sent_count += 1
+            except RuntimeError as e:
+                if "not connected" in str(e).lower() or "accept" in str(e).lower():
+                    logger.debug(
+                        f"WebSocket not connected for {user_id} during broadcast"
+                    )
+                else:
+                    logger.warning(f"RuntimeError broadcasting to {user_id}: {e}")
+                disconnected.append(user_id)
             except Exception as e:
                 logger.warning(f"Failed to send to user {user_id}: {e}")
                 disconnected.append(user_id)

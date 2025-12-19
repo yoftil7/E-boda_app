@@ -49,9 +49,7 @@ async def authenticate_websocket(websocket: WebSocket) -> dict:
 
     if not token:
         logger.warning("WebSocket connection rejected: Missing authentication token")
-        await websocket.close(
-            code=status.WS_1008_POLICY_VIOLATION, reason="Missing authentication token"
-        )
+        # The caller (websocket_endpoint) handles cleanup
         raise Exception("Missing authentication token")
 
     try:
@@ -65,9 +63,6 @@ async def authenticate_websocket(websocket: WebSocket) -> dict:
         if not user_id or not role:
             logger.warning(
                 f"WebSocket connection rejected: Invalid token payload - user_id={user_id}, role={role}"
-            )
-            await websocket.close(
-                code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token payload"
             )
             raise Exception("Invalid token payload")
 
@@ -85,7 +80,4 @@ async def authenticate_websocket(websocket: WebSocket) -> dict:
         logger.error(f"SECRET_KEY used: {SECRET_KEY[:10]}...{SECRET_KEY[-10:]}")
         logger.error(f"Token that failed: {token[:30]}...{token[-30:]}")
         logger.error("=" * 60)
-        await websocket.close(
-            code=status.WS_1008_POLICY_VIOLATION, reason="Invalid or expired token"
-        )
         raise Exception("Invalid or expired token")

@@ -49,8 +49,30 @@ export default function RideSummaryScreen({ route, navigation }) {
   }
 
   const distanceKm = ride.distance_km || (ride.distance ? ride.distance / 1000 : 0)
-  const durationMin = ride.duration_minutes || (ride.duration ? Math.floor(ride.duration / 60) : 0)
-  const finalFare = ride.final_fare || ride.fare || 0
+
+  let durationMin = ride.duration_minutes || 0
+  if (!durationMin && ride.started_at && ride.completed_at) {
+    try {
+      const started = new Date(ride.started_at)
+      const completed = new Date(ride.completed_at)
+      // Validate dates are valid and completed is after started
+      if (!isNaN(started.getTime()) && !isNaN(completed.getTime()) && completed > started) {
+        durationMin = Math.max(1, Math.round((completed - started) / 60000))
+      }
+    } catch (e) {
+      console.log("[RideSummary] Error parsing timestamps:", e)
+    }
+  }
+  // Fallback to legacy duration field
+  if (!durationMin && ride.duration) {
+    durationMin = Math.floor(ride.duration / 60)
+  }
+  // Final fallback: if still 0 and ride was in_progress at some point, show at least 1 min
+  if (!durationMin && (ride.started_at || ride.status === "completed")) {
+    durationMin = 1
+  }
+
+  const finalFare = ride.final_fare || ride.fare || ride.estimated_fare || 0
 
   const pickupAddress =
     ride.pickup?.place_name ||

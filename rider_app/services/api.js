@@ -1,9 +1,18 @@
 import axios from "axios"
 import * as SecureStore from "expo-secure-store"
+import { Platform } from "react-native"
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "http://10.0.2.2:8000"
+const getDefaultBaseUrl = () => {
+  if (Platform.OS === "android") {
+    return "http://10.0.2.2:8000"
+  }
+  // iOS simulator and physical devices use localhost or machine IP
+  return "http://localhost:8000"
+}
 
-console.log("[v0] API Base URL:", API_BASE_URL)
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || getDefaultBaseUrl()
+
+console.log(`[API] Platform: ${Platform.OS}, Base URL: ${API_BASE_URL}`)
 
 const api = axios.create({
   baseURL: API_BASE_URL,

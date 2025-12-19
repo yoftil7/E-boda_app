@@ -17,7 +17,8 @@ E-Boda Rider connects users with nearby electric motorcycle drivers through:
 - **Framework**: React Native 0.74.5 with Expo 51.0.0
 - **State Management**: Zustand 4.4.0 for global state (auth, ride, location)
 - **Networking**: Axios 1.6.0 with JWT interceptor; custom WebSocket client
-- **Maps**: React Native Maps 1.14.0 with Google Maps API integration
+- **Maps**: Apple Maps on iOS (default)
+  Google Maps on Androi
 - **Navigation**: React Navigation 6.1.0 (bottom tabs, stack navigation)
 - **Location**: Expo Location 17.0.0 with foreground tracking
 - **Storage**: Expo SecureStore 13.0.0 (JWT token), AsyncStorage 1.23.1 (ride state)
@@ -82,9 +83,19 @@ npm install
 
 # 2. Create .env file (see above)
 
-cp .env.example .env
+Create a .env file in rider_app/:
 
 # Edit with your backend URL and API keys
+
+# Platform Notes:
+
+    Android Emulator automatically uses 10.0.2.2
+
+    iOS Simulator uses localhost
+
+    This is handled internally via platform detection
+
+    Do not hardcode IPs in source files
 
 # 3. Start the development server
 
@@ -94,7 +105,21 @@ npm start
 
 npm run android # Android emulator
 npm run ios # iOS simulator
-npm run web # Web preview (limited features)
+npm run web # Web preview (limited features) -- pending
+
+# Map Behavior
+
+Camera Follow (Uber-like)
+
+Auto-follow is ON by default
+
+User pan/zoom → follow temporarily disabled
+
+Re-center button re-enables follow
+
+Smooth animation with dynamic zoom
+
+Works identically on iOS and Android
 
 # 5. Test login
 
